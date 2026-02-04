@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple CRM</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">CRM</div>
+        <div>
+          <div class="title">Simple CRM</div>
+          <div class="subtitle">Contacts + Deals (saved in your browser)</div>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="exportBtn" class="btn secondary">Export JSON</button>
+        <label class="btn secondary file">
+          Import JSON
+          <input id="importInput" type="file" accept="application/json" />
+        </label>
+        <button id="resetBtn" class="btn danger">Reset</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>Contacts</h2>
+          <button id="newContactBtn" class="btn">+ New</button>
+        </div>
+
+        <div class="filters">
+          <input id="contactSearch" class="input" placeholder="Search name, email, company…" />
+          <select id="contactSort" class="input">
+            <option value="updatedDesc">Sort: Recently updated</option>
+            <option value="nameAsc">Sort: Name (A→Z)</option>
+            <option value="companyAsc">Sort: Company (A→Z)</option>
+          </select>
+        </div>
+
+        <div id="contactList" class="list"></div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2 id="detailTitle">Details</h2>
+          <div class="detail-actions">
+            <button id="deleteContactBtn" class="btn danger hidden">Delete</button>
+          </div>
+        </div>
+
+        <div id="emptyState" class="empty">
+          <p><strong>No contact selected.</strong></p>
+          <p>Create a new contact or select one from the list.</p>
+        </div>
+
+        <div id="detailView" class="hidden">
+          <form id="contactForm" class="form">
+            <div class="grid">
+              <div>
+                <label class="label">Name</label>
+                <input id="name" class="input" required />
+              </div>
+              <div>
+                <label class="label">Company</label>
+                <input id="company" class="input" />
+              </div>
+              <div>
+                <label class="label">Email</label>
+                <input id="email" class="input" type="email" />
+              </div>
+              <div>
+                <label class="label">Phone</label>
+                <input id="phone" class="input" />
+              </div>
+            </div>
+
+            <div>
+              <label class="label">Notes</label>
+              <textarea id="notes" class="input" rows="4" placeholder="Call notes, next steps, etc."></textarea>
+            </div>
+
+            <div class="row">
+              <button class="btn" type="submit">Save</button>
+              <span id="saveHint" class="hint"></span>
+            </div>
+          </form>
+
+          <div class="divider"></div>
+
+          <div class="panel-subhead">
+            <h3>Deals</h3>
+            <button id="newDealBtn" class="btn secondary">+ Add deal</button>
+          </div>
+
+          <div class="filters deals">
+            <select id="dealStageFilter" class="input">
+              <option value="all">All stages</option>
+              <option value="lead">Lead</option>
+              <option value="qualified">Qualified</option>
+              <option value="proposal">Proposal</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+          </div>
+
+          <div id="dealList" class="list"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="modalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+      <div class="modal">
+        <div class="modal-head">
+          <h3 id="modalTitle">Add Deal</h3>
+          <button id="modalClose" class="icon-btn" aria-label="Close">✕</button>
+        </div>
+
+        <form id="dealForm" class="form">
+          <div class="grid">
+            <div>
+              <label class="label">Title</label>
+              <input id="dealTitle" class="input" required placeholder="e.g., Renewal - ACME" />
+            </div>
+            <div>
+              <label class="label">Value</label>
+              <input id="dealValue" class="input" type="number" min="0" step="1" placeholder="e.g., 12000" />
+            </div>
+            <div>
+              <label class="label">Stage</label>
+              <select id="dealStage" class="input">
+                <option value="lead">Lead</option>
+                <option value="qualified">Qualified</option>
+                <option value="proposal">Proposal</option>
+                <option value="won">Won</option>
+                <option value="lost">Lost</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Close date</label>
+              <input id="dealCloseDate" class="input" type="date" />
+            </div>
+          </div>
+
+          <div class="row">
+            <button class="btn" type="submit">Save Deal</button>
+            <button id="dealCancel" class="btn secondary" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
