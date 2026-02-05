@@ -5,6 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple CRM</title>
     <link rel="stylesheet" href="./styles.css" />
+
+    <script>
+      (function(publicAppId){
+        (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
+          v=['initialize','identify','updateOptions','pageLoad','track','trackAgent'];for(w=0,x=v.length;w<x;++w)(function(m){
+          o[m]=o[m]||function(){o._q[m===v[0]?'unshift':'push']([m].concat([].slice.call(arguments,0)));};})(v[w]);
+          y=e.createElement(n);y.async=!0;y.src='https://content.pendo-internal.pendo.io/agent/static/'+publicAppId+'/pendo.js';
+          z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
+      })('3a0c6e1c-0031-4557-8a26-026b9d17e426');
+
+
+// This function creates visitors and accounts in Pendo
+    // You will need to replace <visitor-id-goes-here> and <account-id-goes-here> with values you use in your app
+    // Please use Strings, Numbers, or Bools for value types.
+    pendo.initialize({
+        visitor: {
+            id:   "Koren@Koren.com" 
+        },
+        account: {
+            id:    "Abdush"
+        }
+    });
+    </script>
+
   </head>
   <body>
     <header class="topbar">
