@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="./styles.css" />
 
     <script>
+// Random user generator - pick 1 of 10 users
+var users = [
+    { id: "alice.johnson@company.com", account: "TechCorp", renewalDate: "2026-12-31T23:59:59Z", isInTrial: false },
+    { id: "bob.smith@startup.io", account: "StartupLabs", renewalDate: "2026-06-15T23:59:59Z", isInTrial: true },
+    { id: "carol.williams@enterprise.net", account: "EnterpriseCo", renewalDate: "2027-03-20T23:59:59Z", isInTrial: false },
+    { id: "david.brown@agency.com", account: "CreativeAgency", renewalDate: "2026-09-10T23:59:59Z", isInTrial: false },
+    { id: "emma.davis@saas.com", account: "SaaSVentures", renewalDate: "2026-05-01T23:59:59Z", isInTrial: true },
+    { id: "frank.miller@tech.io", account: "InnovateTech", renewalDate: "2026-11-30T23:59:59Z", isInTrial: false },
+    { id: "grace.wilson@digital.com", account: "DigitalWorks", renewalDate: "2026-08-25T23:59:59Z", isInTrial: true },
+    { id: "henry.moore@solutions.net", account: "SolutionsPlus", renewalDate: "2027-01-15T23:59:59Z", isInTrial: false },
+    { id: "isabel.taylor@platform.io", account: "PlatformHub", renewalDate: "2026-07-05T23:59:59Z", isInTrial: true },
+    { id: "jack.anderson@cloud.com", account: "CloudScale", renewalDate: "2026-10-20T23:59:59Z", isInTrial: false }
+];
+
+var selectedUser = users[Math.floor(Math.random() * users.length)];
+var visitorId = selectedUser.id;
+var accountId = selectedUser.account;
+var renewalDate = selectedUser.renewalDate;
+var isInTrial = selectedUser.isInTrial;
+
 (function(publicAppId){
     (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
     v=['initialize','identify','updateOptions','pageLoad','track','trackAgent'];for(w=0,x=v.length;w<x;++w)(function(m){
@@ -15,11 +35,13 @@
         z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
         pendo.initialize({
             visitor: {
-                id:   "Koren@gmail.com"
+                id: visitorId,
+                renewalDate: renewalDate,
+                isInTrial: isInTrial
             },
 
             account: {
-                id:              "Abdush"
+                id: accountId
             }
         });
 })('3a0c6e1c-0031-4557-8a26-026b9d17e426');
