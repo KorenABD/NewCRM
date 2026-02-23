@@ -21,7 +21,12 @@ var users = [
     { id: "jack.anderson@cloud.com", account: "CloudScale", renewalDate: "2026-10-20T23:59:59Z", isInTrial: false }
 ];
 
-var selectedUser = users[Math.floor(Math.random() * users.length)];
+var storedUserId = sessionStorage.getItem("crm_pendo_user");
+var selectedUser = users.find(function(u){ return u.id === storedUserId; });
+if (!selectedUser) {
+  selectedUser = users[Math.floor(Math.random() * users.length)];
+  sessionStorage.setItem("crm_pendo_user", selectedUser.id);
+}
 var visitorId = selectedUser.id;
 var accountId = selectedUser.account;
 var renewalDate = selectedUser.renewalDate;
