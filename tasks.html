@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tasks — Simple CRM</title>
+    <link rel="stylesheet" href="./styles.css" />
+
+    <script>
+var users = [
+    { id: "alice.johnson@company.com", account: "TechCorp", renewalDate: "2026-12-31T23:59:59Z", isInTrial: false },
+    { id: "bob.smith@startup.io", account: "StartupLabs", renewalDate: "2026-06-15T23:59:59Z", isInTrial: true },
+    { id: "carol.williams@enterprise.net", account: "EnterpriseCo", renewalDate: "2027-03-20T23:59:59Z", isInTrial: false },
+    { id: "david.brown@agency.com", account: "CreativeAgency", renewalDate: "2026-09-10T23:59:59Z", isInTrial: false },
+    { id: "emma.davis@saas.com", account: "SaaSVentures", renewalDate: "2026-05-01T23:59:59Z", isInTrial: true },
+    { id: "frank.miller@tech.io", account: "InnovateTech", renewalDate: "2026-11-30T23:59:59Z", isInTrial: false },
+    { id: "grace.wilson@digital.com", account: "DigitalWorks", renewalDate: "2026-08-25T23:59:59Z", isInTrial: true },
+    { id: "henry.moore@solutions.net", account: "SolutionsPlus", renewalDate: "2027-01-15T23:59:59Z", isInTrial: false },
+    { id: "isabel.taylor@platform.io", account: "PlatformHub", renewalDate: "2026-07-05T23:59:59Z", isInTrial: true },
+    { id: "jack.anderson@cloud.com", account: "CloudScale", renewalDate: "2026-10-20T23:59:59Z", isInTrial: false }
+];
+var selectedUser = users[Math.floor(Math.random() * users.length)];
+(function(publicAppId){
+    (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
+    v=['initialize','identify','updateOptions','pageLoad','track','trackAgent'];for(w=0,x=v.length;w<x;++w)(function(m){
+        o[m]=o[m]||function(){o._q[m===v[0]?'unshift':'push']([m].concat([].slice.call(arguments,0)));};})(v[w]);
+        y=e.createElement(n);y.async=!0;y.src='https://cdn.pendo.io/agent/static/'+publicAppId+'/pendo.js';
+        z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
+        pendo.initialize({
+            visitor: { id: selectedUser.id, renewalDate: selectedUser.renewalDate, isInTrial: selectedUser.isInTrial },
+            account: { id: selectedUser.account }
+        });
+})('3a0c6e1c-0031-4557-8a26-026b9d17e426');
+</script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">CRM</div>
+        <div>
+          <div class="title">Simple CRM</div>
+          <div class="subtitle">Contacts + Deals (saved in your browser)</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="exportBtn" class="btn secondary">Export JSON</button>
+        <label class="btn secondary file">
+          Import JSON
+          <input id="importInput" type="file" accept="application/json" />
+        </label>
+        <button id="resetBtn" class="btn danger">Reset</button>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <a class="nav-tab" href="./index.html">Contacts</a>
+      <a class="nav-tab" href="./reports.html">Reports</a>
+      <a class="nav-tab active" href="./tasks.html">Tasks</a>
+    </nav>
+
+    <div class="page">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Tasks</h2>
+          <button id="clearCompletedBtn" class="btn danger">Clear Completed</button>
+        </div>
+        <form id="taskForm" class="form">
+          <div>
+            <label class="label">Task</label>
+            <input id="taskTitle" class="input" placeholder="e.g., Follow up with ACME" required />
+          </div>
+          <div class="grid">
+            <div>
+              <label class="label">Contact (optional)</label>
+              <select id="taskContact" class="input">
+                <option value="">— None —</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Due date</label>
+              <input id="taskDueDate" class="input" type="date" />
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn" type="submit">+ Add Task</button>
+          </div>
+        </form>
+        <div class="divider"></div>
+        <div class="filter-row">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="pending">Pending</button>
+          <button class="filter-btn" data-filter="done">Done</button>
+        </div>
+        <div id="taskList" class="list"></div>
+      </div>
+    </div>
+
+    <script src="./shared.js"></script>
+    <script src="./tasks.js"></script>
+  </body>
+</html>
