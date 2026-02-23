@@ -19,7 +19,12 @@ var users = [
     { id: "isabel.taylor@platform.io", account: "PlatformHub", renewalDate: "2026-07-05T23:59:59Z", isInTrial: true },
     { id: "jack.anderson@cloud.com", account: "CloudScale", renewalDate: "2026-10-20T23:59:59Z", isInTrial: false }
 ];
-var selectedUser = users[Math.floor(Math.random() * users.length)];
+var storedUserId = sessionStorage.getItem("crm_pendo_user");
+var selectedUser = users.find(function(u){ return u.id === storedUserId; });
+if (!selectedUser) {
+  selectedUser = users[Math.floor(Math.random() * users.length)];
+  sessionStorage.setItem("crm_pendo_user", selectedUser.id);
+}
 (function(publicAppId){
     (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
     v=['initialize','identify','updateOptions','pageLoad','track','trackAgent'];for(w=0,x=v.length;w<x;++w)(function(m){
