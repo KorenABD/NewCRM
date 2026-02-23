@@ -34,15 +34,8 @@ var isInTrial = selectedUser.isInTrial;
         y=e.createElement(n);y.async=!0;y.src='https://cdn.pendo.io/agent/static/'+publicAppId+'/pendo.js';
         z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
         pendo.initialize({
-            visitor: {
-                id: visitorId,
-                renewalDate: renewalDate,
-                isInTrial: isInTrial
-            },
-
-            account: {
-                id: accountId
-            }
+            visitor: { id: visitorId, renewalDate: renewalDate, isInTrial: isInTrial },
+            account: { id: accountId }
         });
 })('3a0c6e1c-0031-4557-8a26-026b9d17e426');
 </script>
@@ -56,7 +49,6 @@ var isInTrial = selectedUser.isInTrial;
           <div class="subtitle">Contacts + Deals (saved in your browser)</div>
         </div>
       </div>
-
       <div class="top-actions">
         <button id="exportBtn" class="btn secondary">Export JSON</button>
         <label class="btn secondary file">
@@ -66,6 +58,12 @@ var isInTrial = selectedUser.isInTrial;
         <button id="resetBtn" class="btn danger">Reset</button>
       </div>
     </header>
+
+    <nav class="nav">
+      <a class="nav-tab active" href="./index.html">Contacts</a>
+      <a class="nav-tab" href="./reports.html">Reports</a>
+      <a class="nav-tab" href="./tasks.html">Tasks</a>
+    </nav>
 
     <main class="layout">
       <aside class="panel">
@@ -90,6 +88,7 @@ var isInTrial = selectedUser.isInTrial;
         <div class="panel-head">
           <h2 id="detailTitle">Details</h2>
           <div class="detail-actions">
+            <button id="duplicateContactBtn" class="btn secondary hidden">Duplicate</button>
             <button id="deleteContactBtn" class="btn danger hidden">Delete</button>
           </div>
         </div>
@@ -127,6 +126,7 @@ var isInTrial = selectedUser.isInTrial;
 
             <div class="row">
               <button class="btn" type="submit">Save</button>
+              <button id="discardBtn" class="btn secondary" type="button">Discard</button>
               <span id="saveHint" class="hint"></span>
             </div>
           </form>
@@ -154,7 +154,7 @@ var isInTrial = selectedUser.isInTrial;
       </section>
     </main>
 
-    <!-- Modal -->
+    <!-- Deal modal -->
     <div id="modalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true">
       <div class="modal">
         <div class="modal-head">
@@ -196,6 +196,7 @@ var isInTrial = selectedUser.isInTrial;
       </div>
     </div>
 
+    <script src="./shared.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
