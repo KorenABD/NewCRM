@@ -89,13 +89,25 @@ function escapeHtml(str) {
 /* Export / Import / Reset — called on every page with a re-render callback */
 function setupHeader(onDataChange) {
   el("exportBtn").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const jsonString = JSON.stringify(state, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "simple-crm-export.json";
     a.click();
     URL.revokeObjectURL(url);
+    const totalDeals = state.contacts.reduce((sum, c) => sum + (c.deals ? c.deals.length : 0), 0);
+    pendo.track("Exported JSON", {
+      fileName: "simple-crm-export.json",
+      fileSizeBytes: blob.size,
+      fileSizeKB: parseFloat((blob.size / 1024).toFixed(2)),
+      characterCount: jsonString.length,
+      contactCount: state.contacts.length,
+      dealCount: totalDeals,
+      taskCount: (state.tasks || []).length,
+      screenWidth: window.innerWidth,
+    });
   });
 
   el("importInput").addEventListener("change", async (e) => {
