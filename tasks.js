@@ -50,11 +50,30 @@ function renderTasks() {
     card.querySelector(".task-check").addEventListener("change", (e) => {
       t.done = e.target.checked;
       saveState();
+      // Only on completion, not when a task is un-checked (reopened)
+      if (t.done) {
+        pendo.track("Task Completed", {
+          taskId: t.id,
+          hasContact: !!t.contactId,
+          hasDueDate: !!t.dueDate,
+          wasOverdue: !!t.dueDate && t.dueDate < todayISODate(),
+          daysToComplete: daysSince(t.createdAt),
+          remainingPendingCount: state.tasks.filter((x) => !x.done).length,
+        });
+      }
       renderTasks();
     });
     card.querySelector(".task-del").addEventListener("click", () => {
       state.tasks = state.tasks.filter((x) => x.id !== t.id);
       saveState();
+      pendo.track("Task Deleted", {
+        taskId: t.id,
+        wasCompleted: !!t.done,
+        wasOverdue: !t.done && !!t.dueDate && t.dueDate < todayISODate(),
+        hasContact: !!t.contactId,
+        hasDueDate: !!t.dueDate,
+        remainingTaskCount: state.tasks.length,
+      });
       renderTasks();
     });
     taskListEl.appendChild(card);
@@ -66,15 +85,26 @@ el("taskForm").addEventListener("submit", (e) => {
   const title = el("taskTitle").value.trim();
   if (!title) return;
   state.tasks = state.tasks || [];
-  state.tasks.unshift({
+  const task = {
     id: uid(),
     title,
     contactId: el("taskContact").value || null,
     dueDate: el("taskDueDate").value || "",
     done: false,
     createdAt: nowISO(),
-  });
+  };
+  state.tasks.unshift(task);
   saveState();
+  // Never send the title: it often contains contact names
+  pendo.track("Task Created", {
+    taskId: task.id,
+    hasContact: !!task.contactId,
+    contactId: task.contactId,
+    hasDueDate: !!task.dueDate,
+    daysUntilDue: daysUntil(task.dueDate),
+    totalTaskCount: state.tasks.length,
+    pendingTaskCount: state.tasks.filter((t) => !t.done).length,
+  });
   el("taskForm").reset();
   renderTasks();
 });
@@ -85,6 +115,10 @@ el("clearCompletedBtn").addEventListener("click", () => {
   if (!confirm(`Remove ${count} completed task(s)?`)) return;
   state.tasks = state.tasks.filter((t) => !t.done);
   saveState();
+  pendo.track("Completed Tasks Cleared", {
+    clearedCount: count,
+    remainingTaskCount: state.tasks.length,
+  });
   renderTasks();
 });
 

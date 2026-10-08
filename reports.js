@@ -61,6 +61,13 @@ el("exportCsvBtn").addEventListener("click", () => {
   a.download = "crm-deals.csv";
   a.click();
   URL.revokeObjectURL(url);
+  pendo.track("Exported CSV", {
+    fileName: "crm-deals.csv",
+    fileSizeBytes: blob.size,
+    rowCount: rows.length,
+    columnCount: headers.length,
+    contactCount: state.contacts.length,
+  });
 });
 
 setupHeader(renderReports);
