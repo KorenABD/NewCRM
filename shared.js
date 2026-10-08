@@ -16,6 +16,30 @@ const stageLabel = (s) =>
 
 const nowISO = () => new Date().toISOString();
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/* Today's local date as YYYY-MM-DD, the format <input type="date"> uses */
+const todayISODate = () => {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+/* Whole days from today until a YYYY-MM-DD date (negative once it has passed), or null if unset/invalid */
+const daysUntil = (date) => {
+  const diff = Date.parse(date) - Date.parse(todayISODate());
+  return Number.isFinite(diff) ? Math.round(diff / DAY_MS) : null;
+};
+
+/* Whole days elapsed since an ISO timestamp, or null if unset/invalid */
+const daysSince = (iso) => {
+  const diff = Date.now() - Date.parse(iso);
+  return Number.isFinite(diff) ? Math.floor(diff / DAY_MS) : null;
+};
+
+const countDeals = (contacts) =>
+  contacts.reduce((sum, c) => sum + (Array.isArray(c?.deals) ? c.deals.length : 0), 0);
+
 function uid() {
   return Math.random().toString(16).slice(2) + Date.now().toString(16);
 }
@@ -113,10 +137,16 @@ function setupHeader(onDataChange) {
   el("importInput").addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Truncated so a long file name cannot push the event past Pendo's 512-byte property limit
+    const fileName = file.name.slice(0, 64);
     try {
       const text = await file.text();
       const parsed = JSON.parse(text);
       if (!parsed || !Array.isArray(parsed.contacts)) throw new Error("Invalid file shape.");
+      // Import replaces everything, so capture what is about to be overwritten
+      const previousContactCount = state.contacts.length;
+      const previousDealCount = countDeals(state.contacts);
+      const previousTaskCount = (state.tasks || []).length;
       state = {
         contacts: parsed.contacts,
         selectedId: parsed.selectedId ?? (parsed.contacts[0]?.id ?? null),
@@ -124,8 +154,30 @@ function setupHeader(onDataChange) {
       };
       saveState();
       onDataChange();
+      pendo.track("Imported JSON", {
+        fileName,
+        fileSizeBytes: file.size,
+        fileType: file.type,
+        contactCount: state.contacts.length,
+        dealCount: countDeals(state.contacts),
+        taskCount: (state.tasks || []).length,
+        previousContactCount,
+        previousDealCount,
+        previousTaskCount,
+      });
       alert("Imported successfully.");
     } catch (err) {
+      // Send a category, never err.message: JSON.parse messages can echo file contents (contact PII)
+      const failureReason = err instanceof SyntaxError ? "invalid_json"
+                          : err?.message === "Invalid file shape." ? "invalid_shape"
+                          : "unknown";
+      pendo.track("JSON Import Failed", {
+        fileName,
+        fileSizeBytes: file.size,
+        fileType: file.type,
+        failureReason,
+        errorName: err?.name || "Error",
+      });
       alert("Import failed: " + (err?.message || "Unknown error"));
     } finally {
       el("importInput").value = "";
@@ -134,9 +186,18 @@ function setupHeader(onDataChange) {
 
   el("resetBtn").addEventListener("click", () => {
     if (!confirm("Reset all data? This clears localStorage for this app.")) return;
+    // Capture what is being wiped before state is replaced
+    const previousContactCount = state.contacts.length;
+    const previousDealCount = countDeals(state.contacts);
+    const previousTaskCount = (state.tasks || []).length;
     localStorage.removeItem(STORAGE_KEY);
     state = { contacts: [], selectedId: null, tasks: [] };
     seedIfEmpty();
+    pendo.track("Data Reset", {
+      previousContactCount,
+      previousDealCount,
+      previousTaskCount,
+    });
     onDataChange();
   });
 }
@@ -151,3 +212,33 @@ function setupHeader(onDataChange) {
     setTimeout(waitForPendo, 100);
   }
 })();
+
+/* Zendesk help widget (ze-snippet in each page's <head>). Its launcher and panel render in Zendesk
+   iframes that Pendo cannot auto-capture. index.html loads a different Zendesk widget than tasks.html
+   and reports.html, so listen through both the Classic ("webWidget:on") and Messaging ("messenger:on")
+   APIs; each widget only answers its own. zE normally exists by now (the snippet loads synchronously);
+   retry briefly, then give up if it is blocked. */
+(function listenForHelpWidget(attemptsLeft) {
+  if (typeof window.zE !== "function") {
+    if (attemptsLeft > 0) setTimeout(() => listenForHelpWidget(attemptsLeft - 1), 250);
+    return;
+  }
+  let reportingApi = null;
+  const trackHelpWidgetOpened = (api) => () => {
+    // Count each open once, even if both APIs were ever to report it
+    if (reportingApi && reportingApi !== api) return;
+    reportingApi = api;
+    pendo.track("Help Widget Opened", {
+      pagePath: window.location.pathname,
+      contactCount: state.contacts.length,
+      taskCount: (state.tasks || []).length,
+    });
+  };
+  for (const api of ["webWidget:on", "messenger:on"]) {
+    try {
+      window.zE(api, "open", trackHelpWidgetOpened(api));
+    } catch {
+      // This page's widget type does not support this API
+    }
+  }
+})(40);

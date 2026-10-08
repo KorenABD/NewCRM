@@ -165,6 +165,14 @@ function renderDeals(contact) {
         contact.deals = deals.filter((x) => x.id !== d.id);
         touchContact(contact);
         saveState();
+        pendo.track("Deal Deleted", {
+          dealId: d.id,
+          contactId: contact.id,
+          stage: d.stage,
+          dealValue: Number(d.value) || 0,
+          wasOpen: d.stage !== "won" && d.stage !== "lost",
+          remainingDealCount: contact.deals.length,
+        });
         render();
       }
     });
@@ -185,6 +193,12 @@ newContactBtn.addEventListener("click", () => {
   state.contacts.unshift(c);
   state.selectedId = c.id;
   saveState();
+  pendo.track("Contact Created", {
+    contactId: c.id,
+    creationMethod: "blank",
+    dealCount: 0,
+    totalContactCount: state.contacts.length,
+  });
   render();
   formFields.name.focus();
   formFields.name.select();
@@ -197,6 +211,17 @@ deleteContactBtn.addEventListener("click", () => {
   state.contacts = state.contacts.filter((c) => c.id !== selected.id);
   state.selectedId = state.contacts[0]?.id ?? null;
   saveState();
+  // Deleting a contact also deletes its deals, so record the pipeline removed with it
+  const deals = Array.isArray(selected.deals) ? selected.deals : [];
+  const openDeals = deals.filter((d) => d.stage !== "won" && d.stage !== "lost");
+  pendo.track("Contact Deleted", {
+    contactId: selected.id,
+    dealCount: deals.length,
+    openDealCount: openDeals.length,
+    openPipelineValue: openDeals.reduce((sum, d) => sum + (Number(d.value) || 0), 0),
+    contactAgeDays: daysSince(selected.createdAt),
+    remainingContactCount: state.contacts.length,
+  });
   render();
 });
 
@@ -204,6 +229,8 @@ contactForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const selected = getSelected();
   if (!selected) return;
+  const fieldNames = Object.keys(formFields);
+  const before = Object.fromEntries(fieldNames.map((k) => [k, selected[k] || ""]));
   selected.name = formFields.name.value.trim() || "Untitled";
   selected.company = formFields.company.value.trim();
   selected.email = formFields.email.value.trim();
@@ -211,6 +238,19 @@ contactForm.addEventListener("submit", (e) => {
   selected.notes = formFields.notes.value.trim();
   touchContact(selected);
   saveState();
+  // Booleans and lengths only: never send the name, email, phone or notes values (PII)
+  const changedFields = fieldNames.filter((k) => before[k] !== selected[k]);
+  pendo.track("Contact Saved", {
+    contactId: selected.id,
+    changedFields: changedFields.join(","),
+    changedFieldCount: changedFields.length,
+    hasCompany: !!selected.company,
+    hasEmail: !!selected.email,
+    hasPhone: !!selected.phone,
+    hasNotes: !!selected.notes,
+    notesLength: selected.notes.length,
+    dealCount: (selected.deals || []).length,
+  });
   flashSaved();
   renderContacts();
   detailTitle.textContent = `Details — ${selected.name}`;
@@ -223,6 +263,25 @@ function flashSaved() {
 
 contactSearch.addEventListener("input", renderContacts);
 contactSort.addEventListener("change", renderContacts);
+
+// One "Contacts Searched" event per search (once typing pauses), not one per keystroke
+let searchTrackTimer = null;
+let lastTrackedQuery = "";
+contactSearch.addEventListener("input", () => {
+  clearTimeout(searchTrackTimer);
+  searchTrackTimer = setTimeout(() => {
+    const q = contactSearch.value.trim();
+    if (q === lastTrackedQuery) return;
+    lastTrackedQuery = q;
+    if (!q) return;
+    pendo.track("Contacts Searched", {
+      queryLength: q.length, // never the query itself: searches are mostly names, emails or phones (PII)
+      resultsCount: filterContacts(state.contacts).length,
+      totalContactCount: state.contacts.length,
+      sortOrder: contactSort.value,
+    });
+  }, 800);
+});
 
 newDealBtn.addEventListener("click", () => openDealModal(null));
 dealStageFilter.addEventListener("change", render);
@@ -266,14 +325,62 @@ dealForm.addEventListener("submit", (e) => {
   const stage = dealFields.stage.value;
   const closeDate = dealFields.closeDate.value;
   selected.deals = Array.isArray(selected.deals) ? selected.deals : [];
+  let newDeal = null;
+  let prevDeal = null;
   if (editingDealId) {
     const idx = selected.deals.findIndex((d) => d.id === editingDealId);
-    if (idx >= 0) selected.deals[idx] = { ...selected.deals[idx], title, value, stage, closeDate };
+    if (idx >= 0) {
+      prevDeal = selected.deals[idx];
+      selected.deals[idx] = { ...prevDeal, title, value, stage, closeDate };
+    }
   } else {
-    selected.deals.unshift({ id: uid(), title, value, stage, closeDate });
+    newDeal = { id: uid(), title, value, stage, closeDate };
+    selected.deals.unshift(newDeal);
   }
   touchContact(selected);
   saveState();
+  const dealValue = value === "" ? 0 : value;
+  if (newDeal) {
+    pendo.track("Deal Created", {
+      dealId: newDeal.id,
+      contactId: selected.id,
+      stage,
+      dealValue,
+      hasValue: value !== "",
+      hasCloseDate: !!closeDate,
+      daysUntilClose: daysUntil(closeDate),
+      contactDealCount: selected.deals.length,
+    });
+  }
+  if (prevDeal) {
+    const next = { title, value, stage, closeDate };
+    const changedFields = Object.keys(next).filter((k) => String(prevDeal[k] ?? "") !== String(next[k]));
+    // Saving the edit modal without changing anything is not an update
+    if (changedFields.length) {
+      pendo.track("Deal Updated", {
+        dealId: prevDeal.id,
+        contactId: selected.id,
+        changedFields: changedFields.join(","),
+        changedFieldCount: changedFields.length,
+        stage,
+        previousStage: prevDeal.stage,
+        dealValue,
+        previousDealValue: Number(prevDeal.value) || 0,
+        hasCloseDate: !!closeDate,
+      });
+    }
+    if (prevDeal.stage !== stage) {
+      pendo.track("Deal Stage Changed", {
+        dealId: prevDeal.id,
+        contactId: selected.id,
+        fromStage: prevDeal.stage,
+        toStage: stage,
+        dealValue,
+        isClosedWon: stage === "won",
+        isClosedLost: stage === "lost",
+      });
+    }
+  }
   closeDealModal();
   render();
 });
@@ -290,6 +397,13 @@ duplicateContactBtn.addEventListener("click", () => {
   state.contacts.unshift(copy);
   state.selectedId = copy.id;
   saveState();
+  pendo.track("Contact Created", {
+    contactId: copy.id,
+    creationMethod: "duplicate",
+    sourceContactId: selected.id,
+    dealCount: copy.deals.length,
+    totalContactCount: state.contacts.length,
+  });
   render();
 });
 
